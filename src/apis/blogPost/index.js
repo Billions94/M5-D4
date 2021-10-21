@@ -4,11 +4,14 @@ import createHttpError from "http-errors";
 import { blogsValidation } from "./validation.js";
 import { validationResult } from "express-validator";
 import { getBlogs, writeBlogs } from '../../lib/fs-tools.js';
+import multer from 'multer'
+
+import {savePostImg} from '../../lib/fs-tools.js'
 
 const blogPostRouter = express.Router()
 
 // 1. Post, posting a new blog post
-blogPostRouter.post('/', blogsValidation, async(req, res, next) => {
+blogPostRouter.post('/uploadSingle', multer().single('picture'), blogsValidation, async(req, res, next) => {
   try {
     const errorList = validationResult(req)
     
@@ -19,7 +22,9 @@ blogPostRouter.post('/', blogsValidation, async(req, res, next) => {
         const blogPost = await getBlogs()
         blogPost.push(newPost)
 
+        await savePostImg(req.file.originalname, req.file.buffer)
         await writeBlogs(blogPost)
+
 
         res.status(203).send({id: newPost.id})
     }       
@@ -62,7 +67,7 @@ blogPostRouter.get('/:blogId', async(req, res, next) => {
 })
 
 // 4. Put, we are editing an already existing blog post
-blogPostRouter.put('/:blogId', blogsValidation, async(req, res, next) => {
+blogPostRouter.put('/:blogId/uploadSingle', multer().single('picture'), blogsValidation, async(req, res, next) => {
   try {
     const errorList = validationResult(req)
     
@@ -74,6 +79,7 @@ blogPostRouter.put('/:blogId', blogsValidation, async(req, res, next) => {
         const editedPost = { ...blogs[index], ...req.body }
         blogs[index] = editedPost
 
+        await savePostImg(req.file.originalname, req.file.buffer)
         await writeBlogs(blogs)
         res.send(editedPost)
     }
