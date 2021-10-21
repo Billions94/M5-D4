@@ -148,7 +148,6 @@ blogPostRouter.put(
 
   async (req, res, next) => {
     try {
-
       const { text, userName } = req.body;
 
       const comment = { id: uniqid(), text, userName, createdAt: new Date() };
@@ -167,10 +166,41 @@ blogPostRouter.put(
       };
       blogs[index] = editedPost;
 
-  
       await writeBlogs(blogs);
       res.send(editedPost);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
+blogPostRouter.put(
+  "/:blogId/cover",
+  multer().single("picture"),
+
+  async (req, res, next) => {
+    try {
+      const blogs = await getBlogs();
+
+      const index = blogs.findIndex((blog) => blog.id === req.params.blogId);
+
+      const extention = path.extname(req.file.originalname);
+      
+      await savePostImg(req.params.blogId + extention, req.file.buffer);
+      
+      const coverUrl = `http://localhost:3001/img/post/${req.params.blogId}${extention}`;
+
+      const editedPost = {
+          ...blogs[index],
+          cover: coverUrl,
+          updatedAt: new Date(),
+          id: req.params.blogId,
+        };
+        
+        blogs[index] = editedPost;
+
+      await writeBlogs(blogs);
+      res.send(editedPost);
     } catch (error) {
       next(error);
     }
